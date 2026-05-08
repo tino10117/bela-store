@@ -31,14 +31,13 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ================================
-# DATOS
-# ================================
 ARCHIVO = "productos.json"
 IMAGENES_DIR = "imagenes"
 os.makedirs(IMAGENES_DIR, exist_ok=True)
 
 CATEGORIAS = ["Pantalones sastreros", "Shorts sastreros", "Básicas", "Body", "Sweaters", "Conjuntos", "Ropa de hombre"]
+ICONOS = {"Inicio": "🏠", "Pantalones sastreros": "👖", "Shorts sastreros": "🩳",
+          "Básicas": "👕", "Body": "🩱", "Sweaters": "🧥", "Conjuntos": "👗", "Ropa de hombre": "👔"}
 
 def cargar_productos():
     if os.path.exists(ARCHIVO):
@@ -68,9 +67,29 @@ def mostrar_imagen(imagen_path):
         return f'<img src="data:image/{ext};base64,{data}" style="width:100%; border-radius:8px; margin-bottom:10px;">'
     return '<div style="background:#f5e6c8; border-radius:8px; height:150px; display:flex; align-items:center; justify-content:center; color:#b8860b; font-size:40px; margin-bottom:10px;">👗</div>'
 
-# ================================
-# SESSION STATE
-# ================================
+def mostrar_tarjeta(producto, key_add, key_ver):
+    st.markdown(mostrar_imagen(producto.get("imagen", "")), unsafe_allow_html=True)
+    oferta_badge = '<span class="oferta-badge">🔥 OFERTA</span>' if producto.get("oferta") else ""
+    st.markdown(f"""
+        <div class="tarjeta">
+            {oferta_badge}
+            <div class="categoria-tag">{producto['categoria']}</div>
+            <h3>{producto['nombre']}</h3>
+            <p>{producto['descripcion']}</p>
+            <p>📏 {producto['talle']}</p>
+            <div class="precio">${producto['precio']:,}</div>
+        </div>
+    """, unsafe_allow_html=True)
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("🛒 Agregar", key=key_add):
+            st.session_state.carrito.append(producto)
+            st.success("✅ Agregado!")
+    with col_b:
+        if st.button("👁️ Ver más", key=key_ver):
+            st.session_state.producto_detalle = producto
+            st.rerun()
+
 USUARIO_ADMIN = "bela"
 CLAVE_ADMIN = "belastore2024"
 
@@ -83,9 +102,6 @@ if "producto_detalle" not in st.session_state:
 if "categoria_activa" not in st.session_state:
     st.session_state.categoria_activa = "Inicio"
 
-# ================================
-# PANEL ADMIN
-# ================================
 with st.sidebar:
     st.markdown("### 🔐 Panel Admin")
     if not st.session_state.admin:
@@ -170,9 +186,6 @@ with st.sidebar:
             st.success("Eliminado!")
             st.rerun()
 
-# ================================
-# PÁGINA DE DETALLE
-# ================================
 if st.session_state.producto_detalle is not None:
     p = st.session_state.producto_detalle
     if st.button("← Volver"):
@@ -194,7 +207,6 @@ if st.session_state.producto_detalle is not None:
                 <div class="precio" style="font-size:32px">${p['precio']:,}</div>
             </div>
         """, unsafe_allow_html=True)
-
         st.markdown("""
             <div class="pago">
                 <h3>💳 Métodos de pago</h3>
@@ -202,7 +214,6 @@ if st.session_state.producto_detalle is not None:
                 <p style="color:#555">Te enviamos el link por WhatsApp.</p>
             </div>
         """, unsafe_allow_html=True)
-
         col_a, col_b = st.columns(2)
         with col_a:
             if st.button("🛒 Agregar al carrito", key="detalle_agregar"):
@@ -219,37 +230,26 @@ if st.session_state.producto_detalle is not None:
                 </a>
             """, unsafe_allow_html=True)
 
-# ================================
-# TIENDA PRINCIPAL
-# ================================
 else:
     st.markdown('<div class="titulo">🛍️ Bela Store</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtitulo">Moda femenina y masculina • Envíos disponibles</div>', unsafe_allow_html=True)
 
-    # BOTONES DE CATEGORIAS
     st.markdown("<br>", unsafe_allow_html=True)
     categorias_menu = ["Inicio"] + CATEGORIAS
-    iconos = {"Inicio": "🏠", "Pantalones sastreros": "👖", "Shorts sastreros": "🩳",
-              "Básicas": "👕", "Body": "🩱", "Sweaters": "🧥", "Conjuntos": "👗", "Ropa de hombre": "👔"}
-
     cols_cat = st.columns(len(categorias_menu))
     for i, cat in enumerate(categorias_menu):
         with cols_cat[i]:
             activo = st.session_state.categoria_activa == cat
-            if st.button(f"{iconos.get(cat, '👗')} {cat}", key=f"cat_{i}",
+            if st.button(f"{ICONOS.get(cat, '👗')} {cat}", key=f"cat_{i}",
                         use_container_width=True,
                         type="primary" if activo else "secondary"):
                 st.session_state.categoria_activa = cat
                 st.rerun()
 
     st.divider()
-
     productos = cargar_productos()
     categoria_activa = st.session_state.categoria_activa
 
-    # ================================
-    # INICIO — DESTACADOS Y OFERTAS
-    # ================================
     if categoria_activa == "Inicio":
         st.markdown("""
             <div class="banner">
@@ -264,24 +264,7 @@ else:
             cols = st.columns(3)
             for i, producto in enumerate(ofertas):
                 with cols[i % 3]:
-                    st.markdown(mostrar_imagen(producto.get("imagen", "")), unsafe_allow_html=True)
-                    st.markdown(f"""
-                        <div class="tarjeta">
-                            <span class="oferta-badge">🔥 OFERTA</span>
-                            <div class="categoria-tag">{producto['categoria']}</div>
-                            <h3>{producto['nombre']}</h3>
-                            <div class="precio">${producto['precio']:,}</div>
-                        </div>
-                    """, unsafe_allow_html=True)
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        if st.button("🛒", key=f"ofer_add_{i}"):
-                            st.session_state.carrito.append(producto)
-                            st.success("✅ Agregado!")
-                    with col_b:
-                        if st.button("👁️ Ver", key=f"ofer_ver_{i}"):
-                            st.session_state.producto_detalle = producto
-                            st.rerun()
+                    mostrar_tarjeta(producto, f"ofer_add_{i}", f"ofer_ver_{i}")
 
         destacados = [p for p in productos if p.get("destacado")]
         if destacados:
@@ -289,31 +272,11 @@ else:
             cols = st.columns(3)
             for i, producto in enumerate(destacados):
                 with cols[i % 3]:
-                    st.markdown(mostrar_imagen(producto.get("imagen", "")), unsafe_allow_html=True)
-                    st.markdown(f"""
-                        <div class="tarjeta">
-                            <div class="categoria-tag">{producto['categoria']}</div>
-                            <h3>{producto['nombre']}</h3>
-                            <div class="precio">${producto['precio']:,}</div>
-                        </div>
-                    """, unsafe_allow_html=True)
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        if st.button("🛒", key=f"dest_add_{i}"):
-                            st.session_state.carrito.append(producto)
-                            st.success("✅ Agregado!")
-                    with col_b:
-                        if st.button("👁️ Ver", key=f"dest_ver_{i}"):
-                            st.session_state.producto_detalle = producto
-                            st.rerun()
+                    mostrar_tarjeta(producto, f"dest_add_{i}", f"dest_ver_{i}")
 
-    # ================================
-    # CATEGORIA SELECCIONADA
-    # ================================
     else:
-        st.markdown(f"### {iconos.get(categoria_activa, '👗')} {categoria_activa}")
+        st.markdown(f"### {ICONOS.get(categoria_activa, '👗')} {categoria_activa}")
         busqueda = st.text_input("🔍 Buscá dentro de esta categoría:", placeholder="Ej: negro, rosa...")
-
         filtrados = [p for p in productos if p["categoria"] == categoria_activa]
         if busqueda:
             filtrados = [p for p in filtrados if busqueda.lower() in p["nombre"].lower()]
@@ -324,30 +287,9 @@ else:
             cols = st.columns(3)
             for i, producto in enumerate(filtrados):
                 with cols[i % 3]:
-                    st.markdown(mostrar_imagen(producto.get("imagen", "")), unsafe_allow_html=True)
-                    oferta_badge = '<span class="oferta-badge">🔥 OFERTA</span>' if producto.get("oferta") else ""
-                    st.markdown(f"""
-                        <div class="tarjeta">
-                            {oferta_badge}
-                            <h3>{producto['nombre']}</h3>
-                            <p>{producto['descripcion']}</p>
-                            <p>📏 {producto['talle']}</p>
-                            <div class="precio">${producto['precio']:,}</div>
-                        </div>
-                    """, unsafe_allow_html=True)
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        if st.button("🛒 Agregar", key=f"btn_{i}"):
-                            st.session_state.carrito.append(producto)
-                            st.success("✅ Agregado!")
-                    with col_b:
-                        if st.button("👁️ Ver más", key=f"ver_{i}"):
-                            st.session_state.producto_detalle = producto
-                            st.rerun()
+                    mostrar_tarjeta(producto, f"btn_{i}", f"ver_{i}")
 
     st.divider()
-
-    # CARRITO
     st.markdown("### 🛒 Tu pedido")
     if not st.session_state.carrito:
         st.info("Tu carrito está vacío.")
@@ -372,7 +314,6 @@ else:
                 <p>💙 <b>Método de pago:</b> Mercado Pago</p>
             </div>
         """, unsafe_allow_html=True)
-
         col1, col2 = st.columns(2)
         with col1:
             if st.button("🗑️ Vaciar carrito"):
@@ -390,7 +331,6 @@ else:
             """, unsafe_allow_html=True)
 
     st.divider()
-
     st.markdown("""
         <div class="contacto">
             <h2>📲 Contacto</h2>
