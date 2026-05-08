@@ -326,5 +326,5 @@ else:
         <p>📱 WhatsApp: <b>3716507393</b></p>
         <p>📦 Hacemos envíos a todo el país</p>
         <p>🕐 Respondemos de lunes a sábado</p>
-        <p>❤️ Seguinos en Instagram: <b>@belastore</b></p>
+        <p>❤️ Seguinos en Instagram: <b>@belaa__store</b></p>
     </div>""", unsafe_allow_html=True)
