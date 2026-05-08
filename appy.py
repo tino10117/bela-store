@@ -12,21 +12,37 @@ st.markdown("""
     footer {visibility: hidden;}
     header {visibility: hidden;}
     .stDeployButton {display: none;}
-    [data-testid="stToolbar"] {visibility: hidden;}   
-        * { font-family: 'Poppins', sans-serif; }
+    [data-testid="stToolbar"] {visibility: hidden;}
+    * { font-family: 'Poppins', sans-serif; }
     .titulo { text-align: center; font-size: 52px; font-weight: 700; color: #b8860b; }
     .subtitulo { text-align: center; font-size: 18px; color: #888; margin-bottom: 10px; }
     .banner { background: linear-gradient(135deg, #f5e6c8, #fff8e7); border-radius: 16px; 
-              padding: 30px; text-align: center; margin-bottom: 20px; border: 1px solid #d4af37; }
+              padding: 30px; text-align: center; margin-bottom: 20px; border: 1px solid #d4af37;
+              animation: fadeIn 1.2s ease-in-out; }
     .banner h2 { color: #b8860b; font-size: 28px; }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
     .pago { background: linear-gradient(135deg, #f5e6c8, #fff8e7); border-radius: 12px; 
             padding: 20px; margin-top: 20px; border: 1px solid #d4af37; text-align: center; }
     .carrito-item { background: #fffdf0; border-radius: 8px; padding: 10px; margin: 5px 0; 
                     border-left: 4px solid #d4af37; }
     .contacto { background: linear-gradient(135deg, #f5e6c8, #fffdf0); border-radius: 16px; 
                 padding: 30px; text-align: center; margin-top: 20px; border: 1px solid #d4af37; }
-    </style>
-""", unsafe_allow_html=True)
+    .separador { border: none; height: 2px; 
+                 background: linear-gradient(to right, transparent, #d4af37, transparent);
+                 margin: 20px 0; }
+    div[data-testid="stImage"] img {
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    div[data-testid="stImage"] img:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 16px 32px rgba(0,0,0,0.2);
+    }
+    </style>""", unsafe_allow_html=True)
 
 ARCHIVO = "productos.json"
 IMAGENES_DIR = "imagenes"
@@ -96,7 +112,7 @@ with st.sidebar:
             st.session_state.admin = False
             st.rerun()
 
-        st.divider()
+        st.markdown('<hr class="separador">', unsafe_allow_html=True)   
         st.markdown("### ➕ Agregar producto")
         nuevo_nombre = st.text_input("Nombre")
         nueva_categoria = st.selectbox("Categoría", CATEGORIAS)
@@ -127,7 +143,7 @@ with st.sidebar:
             else:
                 st.warning("Completá todos los campos")
 
-        st.divider()
+        st.markdown('<hr class="separador">', unsafe_allow_html=True)     
         st.markdown("### ✏️ Editar producto")
         prods = cargar_productos()
         nombres = [p["nombre"] for p in prods]
@@ -149,7 +165,7 @@ with st.sidebar:
             st.success("✅ Actualizado!")
             st.rerun()
 
-        st.divider()
+        st.markdown('<hr class="separador">', unsafe_allow_html=True)   
         st.markdown("### 🗑️ Eliminar")
         a_eliminar = st.selectbox("Seleccioná", nombres, key="elim")
         if st.button("🗑️ Eliminar"):
@@ -158,7 +174,7 @@ with st.sidebar:
             st.success("Eliminado!")
             st.rerun()
 
-    st.divider()
+    st.markdown('<hr class="separador">', unsafe_allow_html=True)  
     st.markdown("### 📂 Categorías")
     categorias_menu = ["Inicio"] + CATEGORIAS
     for cat in categorias_menu:
