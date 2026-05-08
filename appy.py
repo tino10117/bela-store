@@ -14,19 +14,12 @@ st.markdown("""
     .banner { background: linear-gradient(135deg, #f5e6c8, #fff8e7); border-radius: 16px; 
               padding: 30px; text-align: center; margin-bottom: 20px; border: 1px solid #d4af37; }
     .banner h2 { color: #b8860b; font-size: 28px; }
-    .tarjeta { background-color: #fffdf0; border-radius: 12px; padding: 20px; margin: 10px; 
-               border: 1px solid #d4af37; }
-    .precio { font-size: 22px; font-weight: bold; color: #b8860b; }
-    .categoria-tag { font-size: 13px; color: #aaa; }
+    .pago { background: linear-gradient(135deg, #f5e6c8, #fff8e7); border-radius: 12px; 
+            padding: 20px; margin-top: 20px; border: 1px solid #d4af37; text-align: center; }
     .carrito-item { background: #fffdf0; border-radius: 8px; padding: 10px; margin: 5px 0; 
                     border-left: 4px solid #d4af37; }
     .contacto { background: linear-gradient(135deg, #f5e6c8, #fffdf0); border-radius: 16px; 
                 padding: 30px; text-align: center; margin-top: 20px; border: 1px solid #d4af37; }
-    .detalle { background: #fffdf0; border-radius: 16px; padding: 40px; border: 1px solid #d4af37; }
-    .pago { background: linear-gradient(135deg, #f5e6c8, #fff8e7); border-radius: 12px; 
-            padding: 20px; margin-top: 20px; border: 1px solid #d4af37; text-align: center; }
-    .oferta-badge { background: #c2185b; color: white; border-radius: 8px; padding: 2px 10px; 
-                    font-size: 12px; font-weight: bold; display: inline-block; margin-bottom: 5px; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -58,34 +51,13 @@ def guardar_productos(productos):
     with open(ARCHIVO, "w") as f:
         json.dump(productos, f, ensure_ascii=False, indent=2)
 
-def mostrar_imagen(imagen_path):
+def get_imagen_html(imagen_path):
     if imagen_path and os.path.exists(imagen_path):
         with open(imagen_path, "rb") as f:
             data = base64.b64encode(f.read()).decode()
         ext = imagen_path.split(".")[-1]
         return f'<img src="data:image/{ext};base64,{data}" style="width:100%; border-radius:8px; margin-bottom:10px;">'
-    return '<div style="background:#f5e6c8; border-radius:8px; height:150px; display:flex; align-items:center; justify-content:center; color:#b8860b; font-size:40px; margin-bottom:10px;">👗</div>'
-
-def mostrar_tarjeta(producto, key_add, key_ver):
-    st.markdown(mostrar_imagen(producto.get("imagen", "")), unsafe_allow_html=True)
-    oferta_badge = '<span class="oferta-badge">🔥 OFERTA</span>' if producto.get("oferta") else ""
-    st.markdown(f"""<div class="tarjeta">
-        {oferta_badge}
-        <div class="categoria-tag">{producto['categoria']}</div>
-        <h3>{producto['nombre']}</h3>
-        <p>{producto['descripcion']}</p>
-        <p>📏 {producto['talle']}</p>
-        <div class="precio">${producto['precio']:,}</div>
-    </div>""", unsafe_allow_html=True)
-    col_a, col_b = st.columns(2)
-    with col_a:
-        if st.button("🛒 Agregar", key=key_add):
-            st.session_state.carrito.append(producto)
-            st.success("✅ Agregado!")
-    with col_b:
-        if st.button("👁️ Ver más", key=key_ver):
-            st.session_state.producto_detalle = producto
-            st.rerun()
+    return '<div style="background:#f5e6c8; border-radius:8px; height:180px; display:flex; align-items:center; justify-content:center; color:#b8860b; font-size:50px; margin-bottom:10px;">👗</div>'
 
 USUARIO_ADMIN = "bela"
 CLAVE_ADMIN = "belastore2024"
@@ -100,7 +72,7 @@ if "categoria_activa" not in st.session_state:
     st.session_state.categoria_activa = "Inicio"
 
 # ================================
-# PANEL ADMIN
+# SIDEBAR — ADMIN + CATEGORIAS
 # ================================
 with st.sidebar:
     st.markdown("### 🔐 Panel Admin")
@@ -112,7 +84,7 @@ with st.sidebar:
                 st.session_state.admin = True
                 st.rerun()
             else:
-                st.error("Usuario o contraseña incorrectos")
+                st.error("Incorrecto")
     else:
         st.success("✅ Admin")
         if st.button("Cerrar sesión"):
@@ -139,14 +111,10 @@ with st.sidebar:
                         f.write(nueva_imagen.getbuffer())
                 productos = cargar_productos()
                 productos.append({
-                    "nombre": nuevo_nombre,
-                    "categoria": nueva_categoria,
-                    "precio": nuevo_precio,
-                    "talle": nuevo_talle,
-                    "descripcion": nueva_desc,
-                    "imagen": imagen_path,
-                    "destacado": es_destacado,
-                    "oferta": es_oferta
+                    "nombre": nuevo_nombre, "categoria": nueva_categoria,
+                    "precio": nuevo_precio, "talle": nuevo_talle,
+                    "descripcion": nueva_desc, "imagen": imagen_path,
+                    "destacado": es_destacado, "oferta": es_oferta
                 })
                 guardar_productos(productos)
                 st.success(f"✅ {nuevo_nombre} agregado!")
@@ -156,34 +124,44 @@ with st.sidebar:
 
         st.divider()
         st.markdown("### ✏️ Editar producto")
-        productos_edit = cargar_productos()
-        nombres = [p["nombre"] for p in productos_edit]
+        prods = cargar_productos()
+        nombres = [p["nombre"] for p in prods]
         a_editar = st.selectbox("Seleccioná", nombres, key="editar")
-        nueva_foto = st.file_uploader("📸 Nueva foto", type=["jpg", "jpeg", "png"], key="nueva_foto")
+        nueva_foto = st.file_uploader("📸 Nueva foto", type=["jpg", "jpeg", "png"], key="nf")
         nuevo_destacado = st.checkbox("⭐ Destacado", key="dest")
         nuevo_oferta = st.checkbox("🔥 Oferta", key="ofer")
-
         if st.button("✅ Actualizar"):
-            for p in productos_edit:
+            for p in prods:
                 if p["nombre"] == a_editar:
                     if nueva_foto:
-                        imagen_path = os.path.join(IMAGENES_DIR, nueva_foto.name)
-                        with open(imagen_path, "wb") as f:
+                        ip = os.path.join(IMAGENES_DIR, nueva_foto.name)
+                        with open(ip, "wb") as f:
                             f.write(nueva_foto.getbuffer())
-                        p["imagen"] = imagen_path
+                        p["imagen"] = ip
                     p["destacado"] = nuevo_destacado
                     p["oferta"] = nuevo_oferta
-            guardar_productos(productos_edit)
+            guardar_productos(prods)
             st.success("✅ Actualizado!")
             st.rerun()
 
         st.divider()
         st.markdown("### 🗑️ Eliminar")
-        a_eliminar = st.selectbox("Seleccioná", nombres, key="eliminar")
+        a_eliminar = st.selectbox("Seleccioná", nombres, key="elim")
         if st.button("🗑️ Eliminar"):
-            productos_edit = [p for p in productos_edit if p["nombre"] != a_eliminar]
-            guardar_productos(productos_edit)
+            prods = [p for p in prods if p["nombre"] != a_eliminar]
+            guardar_productos(prods)
             st.success("Eliminado!")
+            st.rerun()
+
+    st.divider()
+    st.markdown("### 📂 Categorías")
+    categorias_menu = ["Inicio"] + CATEGORIAS
+    for cat in categorias_menu:
+        activo = st.session_state.categoria_activa == cat
+        if st.button(f"{ICONOS.get(cat,'👗')} {cat}", key=f"cat_{cat}",
+                    use_container_width=True,
+                    type="primary" if activo else "secondary"):
+            st.session_state.categoria_activa = cat
             st.rerun()
 
 # ================================
@@ -194,33 +172,31 @@ if st.session_state.producto_detalle is not None:
     if st.button("← Volver"):
         st.session_state.producto_detalle = None
         st.rerun()
-    col1, col2 = st.columns([1, 1])
+    col1, col2 = st.columns(2)
     with col1:
-        st.markdown(mostrar_imagen(p.get("imagen", "")), unsafe_allow_html=True)
+        st.markdown(get_imagen_html(p.get("imagen", "")), unsafe_allow_html=True)
     with col2:
-        oferta_badge = '<span class="oferta-badge">🔥 OFERTA</span>' if p.get("oferta") else ""
-        st.markdown(f"""<div class="detalle">
-            <div class="categoria-tag">{p['categoria']}</div>
-            {oferta_badge}
-            <h1>{p['nombre']}</h1>
-            <p style="font-size:18px">{p['descripcion']}</p>
-            <p>📏 <b>Talles:</b> {p['talle']}</p>
-            <div class="precio" style="font-size:32px">${p['precio']:,}</div>
-        </div>""", unsafe_allow_html=True)
+        st.caption(p['categoria'])
+        if p.get("oferta"):
+            st.error("🔥 OFERTA")
+        st.title(p["nombre"])
+        st.write(p["descripcion"])
+        st.write(f"📏 **Talles:** {p['talle']}")
+        st.markdown(f"<span style='color:#b8860b; font-weight:bold; font-size:32px'>${p['precio']:,}</span>", unsafe_allow_html=True)
         st.markdown("""<div class="pago">
             <h3>💳 Métodos de pago</h3>
             <p>💙 <b>Mercado Pago</b></p>
-            <p style="color:#555">Te enviamos el link por WhatsApp.</p>
+            <p>Te enviamos el link por WhatsApp.</p>
         </div>""", unsafe_allow_html=True)
         col_a, col_b = st.columns(2)
         with col_a:
-            if st.button("🛒 Agregar al carrito", key="detalle_agregar"):
+            if st.button("🛒 Agregar al carrito"):
                 st.session_state.carrito.append(p)
                 st.success("✅ Agregado!")
         with col_b:
             mensaje = f"Hola Bela Store! Me interesa: {p['nombre']} (${p['precio']:,})"
             st.markdown(f"""<a href="https://wa.me/3716507393?text={mensaje}" target="_blank">
-                <button style="background-color:#25D366; color:white; border:none; padding:12px 24px; 
+                <button style="background-color:#25D366; color:white; border:none; padding:12px 24px;
                 border-radius:8px; font-size:16px; cursor:pointer; width:100%;">💬 WhatsApp</button>
             </a>""", unsafe_allow_html=True)
 
@@ -230,102 +206,125 @@ if st.session_state.producto_detalle is not None:
 else:
     st.markdown('<div class="titulo">🛍️ Bela Store</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtitulo">Moda femenina y masculina • Envíos disponibles</div>', unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.divider()
 
-    # COLUMNA CATEGORIAS + CONTENIDO
-    col_menu, col_contenido = st.columns([1, 4])
+    productos = cargar_productos()
+    categoria_activa = st.session_state.categoria_activa
 
-    with col_menu:
-        st.markdown("### 📂 Categorías")
-        categorias_menu = ["Inicio"] + CATEGORIAS
-        for cat in categorias_menu:
-            activo = st.session_state.categoria_activa == cat
-            if st.button(f"{ICONOS.get(cat, '👗')} {cat}", key=f"cat_{cat}",
-                        use_container_width=True,
-                        type="primary" if activo else "secondary"):
-                st.session_state.categoria_activa = cat
-                st.rerun()
-
-    with col_contenido:
-        productos = cargar_productos()
-        categoria_activa = st.session_state.categoria_activa
-
-        if categoria_activa == "Inicio":
-            st.markdown("""<div class="banner">
-                <h2>✨ Nueva colección disponible</h2>
-                <p>Pantalones sastreros, conjuntos, sweaters y mucho más. ¡Encontrá tu estilo!</p>
-            </div>""", unsafe_allow_html=True)
-
-            ofertas = [p for p in productos if p.get("oferta")]
-            if ofertas:
-                st.markdown("### 🔥 Ofertas")
-                cols = st.columns(3)
-                for i, producto in enumerate(ofertas):
-                    with cols[i % 3]:
-                        mostrar_tarjeta(producto, f"ofer_add_{i}", f"ofer_ver_{i}")
-
-            destacados = [p for p in productos if p.get("destacado")]
-            if destacados:
-                st.markdown("### ⭐ Destacados")
-                cols = st.columns(3)
-                for i, producto in enumerate(destacados):
-                    with cols[i % 3]:
-                        mostrar_tarjeta(producto, f"dest_add_{i}", f"dest_ver_{i}")
-
-        else:
-            st.markdown(f"### {ICONOS.get(categoria_activa, '👗')} {categoria_activa}")
-            busqueda = st.text_input("🔍 Buscá:", placeholder="Ej: negro, rosa...")
-            filtrados = [p for p in productos if p["categoria"] == categoria_activa]
-            if busqueda:
-                filtrados = [p for p in filtrados if busqueda.lower() in p["nombre"].lower()]
-
-            if not filtrados:
-                st.warning("No hay productos en esta categoría.")
-            else:
-                cols = st.columns(3)
-                for i, producto in enumerate(filtrados):
-                    with cols[i % 3]:
-                        mostrar_tarjeta(producto, f"btn_{i}", f"ver_{i}")
-
-        st.divider()
-        st.markdown("### 🛒 Tu pedido")
-        if not st.session_state.carrito:
-            st.info("Tu carrito está vacío.")
-        else:
-            total = 0
-            items_texto = ""
-            cols = st.columns(3)
-            for i, item in enumerate(st.session_state.carrito):
-                with cols[i % 3]:
-                    st.markdown(f"""<div class="carrito-item">
-                        <b>{item['nombre']}</b><br>
-                        <span style="color:#b8860b">${item['precio']:,}</span>
-                    </div>""", unsafe_allow_html=True)
-                total += item["precio"]
-                items_texto += f"- {item['nombre']} (${item['precio']:,})\n"
-
-            st.markdown(f"### 💰 Total: ${total:,}")
-            st.markdown("""<div class="pago">
-                <p>💙 <b>Método de pago:</b> Mercado Pago</p>
-            </div>""", unsafe_allow_html=True)
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("🗑️ Vaciar carrito"):
-                    st.session_state.carrito = []
-                    st.rerun()
-            with col2:
-                mensaje = f"Hola Bela Store! Quiero hacer un pedido:%0A{items_texto.replace(chr(10), '%0A')}Total: ${total:,}"
-                st.markdown(f"""<a href="https://wa.me/3716507393?text={mensaje}" target="_blank">
-                    <button style="background-color:#d4af37; color:white; border:none; padding:12px 24px; 
-                    border-radius:8px; font-size:16px; cursor:pointer; width:100%;">
-                    💬 Enviar pedido por WhatsApp</button>
-                </a>""", unsafe_allow_html=True)
-
-        st.divider()
-        st.markdown("""<div class="contacto">
-            <h2>📲 Contacto</h2>
-            <p>📱 WhatsApp: <b>3716507393</b></p>
-            <p>📦 Hacemos envíos a todo el país</p>
-            <p>🕐 Respondemos de lunes a sábado</p>
-            <p>❤️ Seguinos en Instagram: <b>@belastore</b></p>
+    if categoria_activa == "Inicio":
+        st.markdown("""<div class="banner">
+            <h2>✨ Nueva colección disponible</h2>
+            <p>Pantalones sastreros, conjuntos, sweaters y mucho más. ¡Encontrá tu estilo!</p>
         </div>""", unsafe_allow_html=True)
+
+        ofertas = [p for p in productos if p.get("oferta")]
+        if ofertas:
+            st.markdown("### 🔥 Ofertas")
+            cols = st.columns(3)
+            for i, prod in enumerate(ofertas):
+                with cols[i % 3]:
+                    st.markdown(get_imagen_html(prod.get("imagen","")), unsafe_allow_html=True)
+                    st.error("🔥 OFERTA")
+                    st.markdown(f"**{prod['nombre']}**")
+                    st.caption(prod['categoria'])
+                    st.markdown(f"<span style='color:#b8860b; font-weight:bold; font-size:20px'>${prod['precio']:,}</span>", unsafe_allow_html=True)
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        if st.button("🛒", key=f"oa{i}"):
+                            st.session_state.carrito.append(prod)
+                            st.success("✅")
+                    with c2:
+                        if st.button("👁️ Ver", key=f"ov{i}"):
+                            st.session_state.producto_detalle = prod
+                            st.rerun()
+
+        destacados = [p for p in productos if p.get("destacado")]
+        if destacados:
+            st.markdown("### ⭐ Destacados")
+            cols = st.columns(3)
+            for i, prod in enumerate(destacados):
+                with cols[i % 3]:
+                    st.markdown(get_imagen_html(prod.get("imagen","")), unsafe_allow_html=True)
+                    st.markdown(f"**{prod['nombre']}**")
+                    st.caption(prod['categoria'])
+                    st.markdown(f"<span style='color:#b8860b; font-weight:bold; font-size:20px'>${prod['precio']:,}</span>", unsafe_allow_html=True)
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        if st.button("🛒", key=f"da{i}"):
+                            st.session_state.carrito.append(prod)
+                            st.success("✅")
+                    with c2:
+                        if st.button("👁️ Ver", key=f"dv{i}"):
+                            st.session_state.producto_detalle = prod
+                            st.rerun()
+
+    else:
+        st.markdown(f"### {ICONOS.get(categoria_activa,'👗')} {categoria_activa}")
+        busqueda = st.text_input("🔍 Buscá:", placeholder="Ej: negro, rosa...")
+        filtrados = [p for p in productos if p["categoria"] == categoria_activa]
+        if busqueda:
+            filtrados = [p for p in filtrados if busqueda.lower() in p["nombre"].lower()]
+
+        if not filtrados:
+            st.warning("No hay productos en esta categoría.")
+        else:
+            cols = st.columns(3)
+            for i, prod in enumerate(filtrados):
+                with cols[i % 3]:
+                    st.markdown(get_imagen_html(prod.get("imagen","")), unsafe_allow_html=True)
+                    if prod.get("oferta"):
+                        st.error("🔥 OFERTA")
+                    st.markdown(f"**{prod['nombre']}**")
+                    st.write(prod['descripcion'])
+                    st.write(f"📏 {prod['talle']}")
+                    st.markdown(f"<span style='color:#b8860b; font-weight:bold; font-size:20px'>${prod['precio']:,}</span>", unsafe_allow_html=True)
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        if st.button("🛒 Agregar", key=f"ba{i}"):
+                            st.session_state.carrito.append(prod)
+                            st.success("✅")
+                    with c2:
+                        if st.button("👁️ Ver más", key=f"bv{i}"):
+                            st.session_state.producto_detalle = prod
+                            st.rerun()
+
+    st.divider()
+    st.markdown("### 🛒 Tu pedido")
+    if not st.session_state.carrito:
+        st.info("Tu carrito está vacío.")
+    else:
+        total = 0
+        items_texto = ""
+        cols = st.columns(3)
+        for i, item in enumerate(st.session_state.carrito):
+            with cols[i % 3]:
+                st.markdown(f"""<div class="carrito-item">
+                    <b>{item['nombre']}</b><br>
+                    <span style="color:#b8860b">${item['precio']:,}</span>
+                </div>""", unsafe_allow_html=True)
+            total += item["precio"]
+            items_texto += f"- {item['nombre']} (${item['precio']:,})\n"
+
+        st.markdown(f"### 💰 Total: ${total:,}")
+        st.markdown("<p>💙 <b>Método de pago:</b> Mercado Pago</p>", unsafe_allow_html=True)
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🗑️ Vaciar carrito"):
+                st.session_state.carrito = []
+                st.rerun()
+        with col2:
+            mensaje = f"Hola Bela Store! Quiero hacer un pedido:%0A{items_texto.replace(chr(10), '%0A')}Total: ${total:,}"
+            st.markdown(f"""<a href="https://wa.me/3716507393?text={mensaje}" target="_blank">
+                <button style="background-color:#d4af37; color:white; border:none; padding:12px 24px;
+                border-radius:8px; font-size:16px; cursor:pointer; width:100%;">
+                💬 Enviar pedido por WhatsApp</button>
+            </a>""", unsafe_allow_html=True)
+
+    st.divider()
+    st.markdown("""<div class="contacto">
+        <h2>📲 Contacto</h2>
+        <p>📱 WhatsApp: <b>3716507393</b></p>
+        <p>📦 Hacemos envíos a todo el país</p>
+        <p>🕐 Respondemos de lunes a sábado</p>
+        <p>❤️ Seguinos en Instagram: <b>@belastore</b></p>
+    </div>""", unsafe_allow_html=True)
