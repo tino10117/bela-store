@@ -22,11 +22,14 @@ st.markdown("""
                     border-left: 4px solid #d4af37; }
     .contacto { background: linear-gradient(135deg, #f5e6c8, #fffdf0); border-radius: 16px; 
                 padding: 30px; text-align: center; margin-top: 20px; border: 1px solid #d4af37; }
+    .detalle { background: #fffdf0; border-radius: 16px; padding: 40px; border: 1px solid #d4af37; }
+    .pago { background: linear-gradient(135deg, #f5e6c8, #fff8e7); border-radius: 12px; 
+            padding: 20px; margin-top: 20px; border: 1px solid #d4af37; text-align: center; }
     </style>
 """, unsafe_allow_html=True)
 
 # ================================
-# DATOS DE PRODUCTOS
+# DATOS
 # ================================
 ARCHIVO = "productos.json"
 
@@ -51,16 +54,17 @@ def guardar_productos(productos):
         json.dump(productos, f, ensure_ascii=False, indent=2)
 
 # ================================
-# LOGIN ADMIN
+# SESSION STATE
 # ================================
 USUARIO_ADMIN = "bela"
 CLAVE_ADMIN = "belastore2024"
 
 if "admin" not in st.session_state:
     st.session_state.admin = False
-
 if "carrito" not in st.session_state:
     st.session_state.carrito = []
+if "producto_detalle" not in st.session_state:
+    st.session_state.producto_detalle = None
 
 # ================================
 # PANEL ADMIN
@@ -119,107 +123,156 @@ with st.sidebar:
             st.rerun()
 
 # ================================
-# HEADER
+# PÁGINA DE DETALLE
 # ================================
-st.markdown('<div class="titulo">🛍️ Bela Store</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitulo">Moda femenina y masculina • Envíos disponibles</div>', unsafe_allow_html=True)
+if st.session_state.producto_detalle is not None:
+    p = st.session_state.producto_detalle
+    if st.button("← Volver a la tienda"):
+        st.session_state.producto_detalle = None
+        st.rerun()
 
-st.markdown("""
-    <div class="banner">
-        <h2>✨ Nueva colección disponible</h2>
-        <p>Pantalones sastreros, conjuntos, sweaters y mucho más. ¡Encontrá tu estilo!</p>
-    </div>
-""", unsafe_allow_html=True)
+    st.markdown(f"""
+        <div class="detalle">
+            <div class="categoria">{p['categoria']}</div>
+            <h1>{p['nombre']}</h1>
+            <p style="font-size:18px">{p['descripcion']}</p>
+            <p style="font-size:16px">📏 <b>Talles disponibles:</b> {p['talle']}</p>
+            <div class="precio" style="font-size:32px">${p['precio']:,}</div>
+        </div>
+    """, unsafe_allow_html=True)
 
-st.divider()
+    st.markdown("""
+        <div class="pago">
+            <h3>💳 Métodos de pago</h3>
+            <p style="font-size:18px">💙 <b>Mercado Pago</b></p>
+            <p style="color:#555">Pagá de forma segura con Mercado Pago.<br>
+            Te enviamos el link de pago por WhatsApp.</p>
+        </div>
+    """, unsafe_allow_html=True)
 
-# ================================
-# BUSCADOR Y FILTRO
-# ================================
-productos = cargar_productos()
-
-col_buscar, col_filtro = st.columns([2, 1])
-with col_buscar:
-    busqueda = st.text_input("🔍 Buscá una prenda:", placeholder="Ej: sweater, pantalón...")
-with col_filtro:
-    categoria = st.selectbox("Filtrá por categoría:", ["Todas", "Pantalones sastreros", "Shorts sastreros", "Básicas", "Body", "Sweaters", "Conjuntos", "Ropa de hombre"])
-
-filtrados = productos
-if categoria != "Todas":
-    filtrados = [p for p in filtrados if p["categoria"] == categoria]
-if busqueda:
-    filtrados = [p for p in filtrados if busqueda.lower() in p["nombre"].lower()]
-
-st.divider()
-
-# ================================
-# PRODUCTOS Y CARRITO
-# ================================
-col_productos, col_carrito = st.columns([2, 1])
-
-with col_productos:
-    st.markdown("### 👗 Productos")
-    if not filtrados:
-        st.warning("No se encontraron productos.")
-    cols = st.columns(2)
-    for i, producto in enumerate(filtrados):
-        with cols[i % 2]:
-            st.markdown(f"""
-                <div class="tarjeta">
-                    <div class="categoria">{producto['categoria']}</div>
-                    <h3>{producto['nombre']}</h3>
-                    <p>{producto['descripcion']}</p>
-                    <p>📏 Talles: {producto['talle']}</p>
-                    <div class="precio">${producto['precio']:,}</div>
-                </div>
-            """, unsafe_allow_html=True)
-            if st.button(f"🛒 Agregar", key=f"btn_{i}"):
-                st.session_state.carrito.append(producto)
-                st.success(f"✅ {producto['nombre']} agregado!")
-
-with col_carrito:
-    st.markdown("### 🛒 Tu pedido")
-    if not st.session_state.carrito:
-        st.info("Tu carrito está vacío.")
-    else:
-        total = 0
-        items_texto = ""
-        for item in st.session_state.carrito:
-            st.markdown(f"""
-                <div class="carrito-item">
-                    <b>{item['nombre']}</b><br>
-                    <span style="color:#b8860b">${item['precio']:,}</span>
-                </div>
-            """, unsafe_allow_html=True)
-            total += item["precio"]
-            items_texto += f"- {item['nombre']} (${item['precio']:,})\n"
-
-        st.markdown(f"**Total: ${total:,}**")
-        if st.button("🗑️ Vaciar carrito"):
-            st.session_state.carrito = []
-            st.rerun()
-
-        mensaje = f"Hola Bela Store! Quiero hacer un pedido:%0A{items_texto.replace(chr(10), '%0A')}Total: ${total:,}"
+    st.markdown("<br>", unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🛒 Agregar al carrito", key="detalle_agregar"):
+            st.session_state.carrito.append(p)
+            st.success(f"✅ {p['nombre']} agregado al carrito!")
+    with col2:
+        mensaje = f"Hola Bela Store! Me interesa: {p['nombre']} (${p['precio']:,})"
         st.markdown(f"""
             <a href="https://wa.me/3716507393?text={mensaje}" target="_blank">
-                <button style="background-color:#d4af37; color:white; border:none; padding:12px 24px; 
-                border-radius:8px; font-size:16px; cursor:pointer; width:100%; margin-top:10px;">
-                💬 Enviar pedido por WhatsApp
+                <button style="background-color:#25D366; color:white; border:none; padding:12px 24px; 
+                border-radius:8px; font-size:16px; cursor:pointer; width:100%;">
+                💬 Consultar por WhatsApp
                 </button>
             </a>
         """, unsafe_allow_html=True)
 
-st.divider()
+# ================================
+# TIENDA PRINCIPAL
+# ================================
+else:
+    st.markdown('<div class="titulo">🛍️ Bela Store</div>', unsafe_allow_html=True)
+    st.markdown('<div class="subtitulo">Moda femenina y masculina • Envíos disponibles</div>', unsafe_allow_html=True)
 
-# ================================
-# CONTACTO
-# ================================
-st.markdown("""
-    <div class="contacto">
-        <h2>📲 Contacto</h2>
-        <p>📱 WhatsApp: <b>3716507393</b></p>
-        <p>📦 Hacemos envíos a todo el país</p>
-        <p>🕐 Respondemos de lunes a sábado</p>
-        <p>❤️ Seguinos en Instagram: <b>@belastore</b></p>
-    </div>
-""", unsafe_allow_html=True)
+    st.markdown("""
+        <div class="banner">
+            <h2>✨ Nueva colección disponible</h2>
+            <p>Pantalones sastreros, conjuntos, sweaters y mucho más. ¡Encontrá tu estilo!</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    st.divider()
+
+    productos = cargar_productos()
+    col_buscar, col_filtro = st.columns([2, 1])
+    with col_buscar:
+        busqueda = st.text_input("🔍 Buscá una prenda:", placeholder="Ej: sweater, pantalón...")
+    with col_filtro:
+        categoria = st.selectbox("Filtrá por categoría:", ["Todas", "Pantalones sastreros", "Shorts sastreros", "Básicas", "Body", "Sweaters", "Conjuntos", "Ropa de hombre"])
+
+    filtrados = productos
+    if categoria != "Todas":
+        filtrados = [p for p in filtrados if p["categoria"] == categoria]
+    if busqueda:
+        filtrados = [p for p in filtrados if busqueda.lower() in p["nombre"].lower()]
+
+    st.divider()
+
+    col_productos, col_carrito = st.columns([2, 1])
+
+    with col_productos:
+        st.markdown("### 👗 Productos")
+        if not filtrados:
+            st.warning("No se encontraron productos.")
+        cols = st.columns(2)
+        for i, producto in enumerate(filtrados):
+            with cols[i % 2]:
+                st.markdown(f"""
+                    <div class="tarjeta">
+                        <div class="categoria">{producto['categoria']}</div>
+                        <h3>{producto['nombre']}</h3>
+                        <p>{producto['descripcion']}</p>
+                        <p>📏 Talles: {producto['talle']}</p>
+                        <div class="precio">${producto['precio']:,}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    if st.button(f"🛒 Agregar", key=f"btn_{i}"):
+                        st.session_state.carrito.append(producto)
+                        st.success(f"✅ {producto['nombre']} agregado!")
+                with col_b:
+                    if st.button(f"👁️ Ver más", key=f"ver_{i}"):
+                        st.session_state.producto_detalle = producto
+                        st.rerun()
+
+    with col_carrito:
+        st.markdown("### 🛒 Tu pedido")
+        if not st.session_state.carrito:
+            st.info("Tu carrito está vacío.")
+        else:
+            total = 0
+            items_texto = ""
+            for item in st.session_state.carrito:
+                st.markdown(f"""
+                    <div class="carrito-item">
+                        <b>{item['nombre']}</b><br>
+                        <span style="color:#b8860b">${item['precio']:,}</span>
+                    </div>
+                """, unsafe_allow_html=True)
+                total += item["precio"]
+                items_texto += f"- {item['nombre']} (${item['precio']:,})\n"
+
+            st.markdown(f"**Total: ${total:,}**")
+
+            st.markdown("""
+                <div class="pago">
+                    <p>💙 <b>Método de pago:</b> Mercado Pago</p>
+                </div>
+            """, unsafe_allow_html=True)
+
+            if st.button("🗑️ Vaciar carrito"):
+                st.session_state.carrito = []
+                st.rerun()
+
+            mensaje = f"Hola Bela Store! Quiero hacer un pedido:%0A{items_texto.replace(chr(10), '%0A')}Total: ${total:,}"
+            st.markdown(f"""
+                <a href="https://wa.me/3716507393?text={mensaje}" target="_blank">
+                    <button style="background-color:#d4af37; color:white; border:none; padding:12px 24px; 
+                    border-radius:8px; font-size:16px; cursor:pointer; width:100%; margin-top:10px;">
+                    💬 Enviar pedido por WhatsApp
+                    </button>
+                </a>
+            """, unsafe_allow_html=True)
+
+    st.divider()
+
+    st.markdown("""
+        <div class="contacto">
+            <h2>📲 Contacto</h2>
+            <p>📱 WhatsApp: <b>3716507393</b></p>
+            <p>📦 Hacemos envíos a todo el país</p>
+            <p>🕐 Respondemos de lunes a sábado</p>
+            <p>❤️ Seguinos en Instagram: <b>@belastore</b></p>
+        </div>
+    """, unsafe_allow_html=True)
