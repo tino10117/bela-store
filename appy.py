@@ -8,7 +8,12 @@ st.set_page_config(page_title="Bela Store", page_icon="🛍️", layout="wide")
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
-    * { font-family: 'Poppins', sans-serif; }
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .stDeployButton {display: none;}
+    [data-testid="stToolbar"] {visibility: hidden;}   
+        * { font-family: 'Poppins', sans-serif; }
     .titulo { text-align: center; font-size: 52px; font-weight: 700; color: #b8860b; }
     .subtitulo { text-align: center; font-size: 18px; color: #888; margin-bottom: 10px; }
     .banner { background: linear-gradient(135deg, #f5e6c8, #fff8e7); border-radius: 16px; 
